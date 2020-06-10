@@ -48,7 +48,8 @@ describe("engine", () => {
       const nextBoardState = computeNextFishState(
         fish,
         position,
-        startingBoard
+        startingBoard,
+        { fish: { breedTime: 10 } }
       );
 
       let nextFish, nextPosition;

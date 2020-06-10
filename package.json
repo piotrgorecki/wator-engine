@@ -2,7 +2,12 @@
   "name": "wator-engine",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "keywords": [
+    "Wator",
+    "simulator"
+  ],
   "scripts": {
     "test": "jest --runInBand --detectOpenHandles",
     "typescript": "tsc --noEmit",
@@ -10,24 +15,35 @@
     "lint": "yarn typescript && yarn eslint",
     "dev": "ts-node-dev --respawn --transpileOnly ./index.ts",
     "build": "tsc",
-    "serve": "node dist/index.js",
-    "prod": "npm run build && npm run serve"
+    "serve": "node lib/index.js",
+    "prod": "npm run build && npm run serve",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint",
+    "preversion": "npm run lint",
+    "version": "npm run format && git add -A src",
+    "postversion": "git push && git push --tags"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/piotrgorecki/wator-engine.git"
   },
-  "author": "piotrgorecki",
+  "author": "Piotr Górecki",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/piotrgorecki/wator-engine/issues"
   },
+  "files": [
+    "lib/**/*"
+  ],
   "homepage": "https://github.com/piotrgorecki/wator-engine#readme",
-  "dependencies": {},
+  "dependencies": {
+    "seedrandom": "^3.0.5"
+  },
   "devDependencies": {
     "@types/eslint": "^6.8.1",
     "@types/jest": "^25.2.3",
     "@types/node": "^14.0.11",
+    "@types/seedrandom": "^2.4.28",
     "@typescript-eslint/eslint-plugin": "^3.1.0",
     "@typescript-eslint/parser": "^3.1.0",
     "eslint": "^7.2.0",

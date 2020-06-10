@@ -3,8 +3,9 @@ export type Fish = {
   _type: "fish";
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isFish = (toBeDetermined: any): toBeDetermined is Fish =>
-  toBeDetermined._type === "fish";
+  toBeDetermined?._type === "fish";
 
 export const getNewFish = (): Fish => ({ age: 0, _type: "fish" });
 

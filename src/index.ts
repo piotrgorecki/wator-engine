@@ -1,1 +1,2 @@
-export * from "./engine";
+import Engine from "./engine";
+export default Engine;

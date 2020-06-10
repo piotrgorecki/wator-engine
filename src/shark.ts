@@ -3,8 +3,9 @@ export type Shark = {
   energy: number;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isShark = (toBeDetermined: any): toBeDetermined is Shark =>
-  toBeDetermined._type === "shark";
+  toBeDetermined?._type === "shark";
 
 export const getNewShark = (startingEnergy: number = 60): Shark => ({
   _type: "shark",
