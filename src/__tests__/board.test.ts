@@ -9,46 +9,44 @@ import {
   iterateBoardCells,
 } from "../board";
 
-import { Fish } from "../fish";
-import { isEmpty } from "../empty";
+import { Fish, FISH_ID } from "../fish";
+import { isEmpty, EMPTY_ID } from "../empty";
 
 describe("board", () => {
-  const fish: Fish = { age: 0, _type: "fish" };
+  const fish: Fish = [FISH_ID, 0];
 
   test("getEmptyBoard", () => {
-    const board = getEmptyBoard(2, 3);
-    expect(board).toHaveLength(2);
+    const board = getEmptyBoard(4, 3);
+    expect(board).toHaveLength(4);
     expect(board[0]).toHaveLength(3);
-    expect(board.every(row => row.every(cell => cell._type === "empty")))
+    expect(board.every(row => row.every(cell => cell[0] === FISH_ID)))
       .toBeTruthy;
   });
 
   test("getBoardDimensions", () => {
-    const board = getEmptyBoard(2, 3);
+    const board = getEmptyBoard(4, 3);
     const [rows, cols] = getBoardDimensions(board);
-    expect(rows).toEqual(2);
+    expect(rows).toEqual(4);
     expect(cols).toEqual(3);
   });
 
   describe("iterateBoardCells", () => {
     test("iterate through all cells", () => {
-      const board = getEmptyBoard(2, 3);
+      const board = getEmptyBoard(3, 3);
       let cellsAmount = 0;
       iterateBoardCells(board, () => {
         cellsAmount++;
       });
-      expect(cellsAmount).toEqual(6);
+      expect(cellsAmount).toEqual(9);
     });
 
     test("provides cell's position on board", () => {
-      const board = getEmptyBoard(2, 3);
-      // @ts-ignore
-      board[1][0] = "test";
+      const board = getEmptyBoard(3, 3);
+      board[1][0] = fish;
       let row, col;
 
       iterateBoardCells(board, (cell, position) => {
-        // @ts-ignore
-        if (cell === "test") {
+        if (cell === fish) {
           [row, col] = position;
         }
       });
@@ -58,27 +56,25 @@ describe("board", () => {
   });
 
   test("getCell", () => {
-    const board = getEmptyBoard(2, 3);
-    // @ts-ignore
-    board[1][2] = 2;
-    expect(getCell([0, 0], board)).toEqual({ _type: "empty" });
-    expect(getCell([1, 2], board)).toEqual(2);
+    const board = getEmptyBoard(3, 3);
+    board[1][2] = fish;
+    expect(getCell([0, 0], board)).toEqual([EMPTY_ID, 0]);
+    expect(getCell([1, 2], board)).toEqual(fish);
   });
 
   test("setCell", () => {
-    const board = getEmptyBoard(2, 3);
-    //@ts-ignore
-    const nextBoard = setCell([1, 1], { _type: "test" }, board);
-    expect(nextBoard[1][1]).toEqual({ _type: "test" });
+    const board = getEmptyBoard(3, 3);
+    setCell([1, 1], fish, board);
+    expect(board[1][1]).toEqual(fish);
   });
 
   test("moveCell", () => {
-    const board = getEmptyBoard(2, 3);
-    const boardWithFish = setCell([1, 1], fish, board);
+    const board = getEmptyBoard(3, 3);
+    setCell([1, 1], fish, board);
 
-    const nextBoard = moveCell([1, 1], [1, 2], boardWithFish);
-    expect(nextBoard[1][1]).toEqual({ _type: "empty" });
-    expect(nextBoard[1][2]).toEqual(fish);
+    moveCell([1, 1], [1, 2], board);
+    expect(board[1][1]).toEqual([EMPTY_ID, 0]);
+    expect(board[1][2]).toEqual(fish);
   });
 
   describe("getNeighboringIndexes", () => {
@@ -122,34 +118,37 @@ describe("board", () => {
 
   describe("getNeighboringCellPosition", () => {
     test("return empty cell", () => {
-      const board = getEmptyBoard(2, 2);
-      // @ts-ignore
-      board[0][0] = 2;
-      // @ts-ignore
-      board[0][1] = 2;
-      // @ts-ignore
-      board[1][0] = 2;
+      const board = getEmptyBoard(3, 3);
+      board[0][0] = fish;
+      board[0][1] = fish;
+      board[0][2] = fish;
+      board[1][0] = fish;
+      board[1][1] = fish;
+      board[1][2] = fish;
+      board[2][0] = fish;
+      board[2][2] = fish;
 
-      const position = getNeighboringCellPosition([0, 0], board, isEmpty);
-      expect(position).toEqual([1, 1]);
+      const position = getNeighboringCellPosition([1, 2], board, isEmpty);
+      expect(position).toEqual([2, 1]);
     });
 
     test("return one cell when there are more valid cells", () => {
-      const board = getEmptyBoard(2, 2);
+      const board = getEmptyBoard(3, 3);
       const position = getNeighboringCellPosition([0, 1], board, isEmpty);
       expect(position).not.toBeNull;
     });
 
     test("returns null when there is no empty cells", () => {
-      const board = getEmptyBoard(2, 2);
-      // @ts-ignore
-      board[0][0] = 2;
-      // @ts-ignore
-      board[0][1] = 2;
-      // @ts-ignore
-      board[1][0] = 2;
-      // @ts-ignore
-      board[1][1] = 2;
+      const board = getEmptyBoard(3, 3);
+      board[0][0] = fish;
+      board[0][1] = fish;
+      board[0][2] = fish;
+      board[1][0] = fish;
+      board[1][1] = fish;
+      board[1][2] = fish;
+      board[2][0] = fish;
+      board[2][1] = fish;
+      board[2][2] = fish;
       const position = getNeighboringCellPosition([0, 1], board, isEmpty);
       expect(position).toBeNull;
     });

@@ -15,6 +15,7 @@
     "lint": "yarn typescript && yarn eslint",
     "dev": "ts-node-dev --respawn --transpileOnly ./index.ts",
     "build": "tsc",
+    "ben": "ts-node-dev --respawn --transpileOnly ./src/engine.benchmark.ts",
     "serve": "node lib/index.js",
     "prod": "npm run build && npm run serve",
     "prepare": "npm run build",

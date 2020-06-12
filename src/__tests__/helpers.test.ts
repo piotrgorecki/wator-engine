@@ -5,12 +5,12 @@ describe("getRandomInt", () => {
     expect(getRandomInt(2, 2)).toEqual(2);
   });
 
-  test("returns number between min and max (including borders)", () => {
+  test("returns number between min and max (excluding borders)", () => {
     useSeed();
-    expect(getRandomInt(2, 3)).toEqual(3);
     expect(getRandomInt(2, 3)).toEqual(2);
     expect(getRandomInt(2, 3)).toEqual(2);
-    expect(getRandomInt(2, 3)).toEqual(3);
+    expect(getRandomInt(2, 3)).toEqual(2);
+    expect(getRandomInt(2, 3)).toEqual(2);
   });
 });
 
@@ -23,9 +23,9 @@ describe("getRandomListItem", () => {
     useSeed();
     expect(getRandomListItem([1, 2, 3])).toEqual(2);
     expect(getRandomListItem([1, 2, 3])).toEqual(1);
-    expect(getRandomListItem([1, 2, 3])).toEqual(1);
-    expect(getRandomListItem([1, 2, 3])).toEqual(3);
     expect(getRandomListItem([1, 2, 3])).toEqual(2);
+    expect(getRandomListItem([1, 2, 3])).toEqual(2);
+    expect(getRandomListItem([1, 2, 3])).toEqual(3);
   });
 
   test("never out of the range", () => {

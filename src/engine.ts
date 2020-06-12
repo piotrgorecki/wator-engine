@@ -2,7 +2,6 @@ import { getRandomInt } from "./helpers";
 import {
   getEmptyBoard,
   Board,
-  Cell,
   getCell,
   setCell,
   getBoardDimensions,
@@ -30,8 +29,9 @@ import {
   breadShark,
   isDead,
 } from "./shark";
+import { Cell } from "./cell";
 
-type EngineConfiguration = {
+export type EngineConfiguration = {
   fish: {
     breedTime: number;
   };
@@ -45,6 +45,7 @@ type EngineConfiguration = {
 export default class Engine {
   board: Board;
   conf: EngineConfiguration;
+  stateVersion: boolean;
 
   constructor(
     boardSize: [number, number],
@@ -53,38 +54,41 @@ export default class Engine {
     conf: EngineConfiguration
   ) {
     this.conf = conf;
+    this.stateVersion = true;
     this.board = getStartingBoard(
       boardSize[0],
       boardSize[1],
       startingFish,
-      startingShark
+      startingShark,
+      this.stateVersion,
+      conf
     );
   }
 
   nextState(): void {
-    let nextBoardState = this.board;
+    this.stateVersion = !this.stateVersion;
 
     iterateBoardCells(this.board, (cell, position) => {
-      if (isFish(cell)) {
-        nextBoardState = computeNextFishState(
-          cell,
-          position,
-          nextBoardState,
-          this.conf
-        );
-      }
-
-      if (isShark(cell)) {
-        nextBoardState = computeNextSharkState(
-          cell,
-          position,
-          nextBoardState,
-          this.conf
-        );
+      if (!isEmpty(cell) && !this.wasMoved(cell)) {
+        if (isFish(cell)) {
+          computeNextFishState(
+            cell,
+            position,
+            this.board,
+            this.conf,
+            this.stateVersion
+          );
+        } else if (isShark(cell)) {
+          computeNextSharkState(
+            cell,
+            position,
+            this.board,
+            this.conf,
+            this.stateVersion
+          );
+        }
       }
     });
-
-    this.board = nextBoardState;
   }
 
   getBoardStats() {
@@ -100,6 +104,10 @@ export default class Engine {
 
     return stats;
   }
+
+  private wasMoved(cell: Cell) {
+    return cell[2] === this.stateVersion;
+  }
 }
 
 const isCellEmptyOrWithFish = (cell: Cell) => isEmpty(cell) || isFish(cell);
@@ -108,7 +116,7 @@ export const breed = (
   parentPosition: Position,
   board: Board,
   individual: Fish | Shark
-) => {
+): void => {
   const childPosition = getNeighboringCellPosition(
     parentPosition,
     board,
@@ -116,34 +124,33 @@ export const breed = (
   );
 
   if (!childPosition) {
-    return board;
+    return;
   }
 
-  return setCell(childPosition, individual, board);
+  setCell(childPosition, individual, board);
 };
 
 export const computeNextFishState = (
   fish: Fish,
   position: Position,
   board: Board,
-  { fish: { breedTime } }: Pick<EngineConfiguration, "fish">
-) => {
+  { fish: { breedTime } }: Pick<EngineConfiguration, "fish">,
+  stateVersion: boolean
+): void => {
   const moveTo = getNeighboringCellPosition(position, board, isEmpty);
 
   if (!moveTo) {
-    return board;
+    return;
   }
 
-  let nextBoard = moveCell(position, moveTo, board);
+  moveCell(position, moveTo, board, stateVersion);
 
   incAge(fish);
 
   if (isBreedTime(fish, breedTime)) {
     resetBreedTime(fish);
-    nextBoard = breed(moveTo, nextBoard, getNewFish());
+    breed(moveTo, board, getNewFish(stateVersion));
   }
-
-  return nextBoard;
 };
 
 const computeNextSharkState = (
@@ -152,8 +159,9 @@ const computeNextSharkState = (
   board: Board,
   {
     shark: { breedEnergy, energyBonus, startingEnergy },
-  }: Pick<EngineConfiguration, "shark">
-) => {
+  }: Pick<EngineConfiguration, "shark">,
+  stateVersion: boolean
+): void => {
   const moveTo = getNeighboringCellPosition(
     position,
     board,
@@ -161,44 +169,46 @@ const computeNextSharkState = (
   );
 
   if (!moveTo) {
-    return board;
+    return;
   }
 
-  let nextBoard = board;
-
-  const cellToMove = getCell(moveTo, nextBoard);
+  const cellToMove = getCell(moveTo, board);
 
   if (isFish(cellToMove)) {
     eatFish(shark, energyBonus);
   } else {
     decEnergy(shark);
     if (isDead(shark)) {
-      nextBoard = setCell(position, EmptyCell, nextBoard);
-      return setCell(moveTo, EmptyCell, nextBoard);
+      setCell(position, EmptyCell, board);
+      setCell(moveTo, EmptyCell, board);
+      return;
     }
   }
 
-  nextBoard = moveCell(position, moveTo, nextBoard);
+  moveCell(position, moveTo, board, stateVersion);
 
   if (isSharkBreedTime(shark, breedEnergy)) {
     breadShark(shark, startingEnergy);
-    return breed(moveTo, nextBoard, getNewShark(startingEnergy));
+    breed(moveTo, board, getNewShark(startingEnergy, stateVersion));
+    return;
   }
-
-  return nextBoard;
 };
 
 export const getStartingBoard = (
   rows: number,
   cols: number,
   numberOfFish: number,
-  numberOfSharks: number
+  numberOfSharks: number,
+  stateVersion: boolean,
+  conf: EngineConfiguration
 ): Board => {
   const emptyBoard = getEmptyBoard(rows, cols);
   const startingBoard: Board = populateEmptyBoard(
     emptyBoard,
     numberOfFish,
-    numberOfSharks
+    numberOfSharks,
+    stateVersion,
+    conf
   );
 
   return startingBoard;
@@ -207,12 +217,14 @@ export const getStartingBoard = (
 const populateEmptyBoard = (
   board: Board,
   numberOfFish: number,
-  numberOfSharks: number
+  numberOfSharks: number,
+  stateVersion: boolean,
+  conf: EngineConfiguration
 ): Board => {
   let cell: Cell;
   const [rows, cols] = getBoardDimensions(board);
   let row, col;
-  let populatedBoard: Board = board;
+  const populatedBoard: Board = board;
 
   for (let i = 0; i < numberOfFish; i++) {
     do {
@@ -221,7 +233,7 @@ const populateEmptyBoard = (
       cell = getCell([row, col], populatedBoard);
     } while (!isEmpty(cell));
 
-    populatedBoard = setCell([row, col], getNewFish(), populatedBoard);
+    setCell([row, col], getNewFish(stateVersion), populatedBoard);
   }
 
   for (let i = 0; i < numberOfSharks; i++) {
@@ -231,7 +243,11 @@ const populateEmptyBoard = (
       cell = getCell([row, col], populatedBoard);
     } while (!isEmpty(cell));
 
-    populatedBoard = setCell([row, col], getNewShark(), populatedBoard);
+    setCell(
+      [row, col],
+      getNewShark(conf.shark.startingEnergy, stateVersion),
+      populatedBoard
+    );
   }
 
   return populatedBoard;

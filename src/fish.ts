@@ -1,17 +1,27 @@
-export type Fish = {
-  age: number;
-  _type: "fish";
-};
+import { Cell } from "./cell";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isFish = (toBeDetermined: any): toBeDetermined is Fish =>
-  toBeDetermined?._type === "fish";
+export type FishId = 1;
+export const FISH_ID: FishId = 1;
 
-export const getNewFish = (): Fish => ({ age: 0, _type: "fish" });
+// [ID, age, state version]
+export type Fish = [FishId, number, boolean];
+
+export const isFish = (toBeDetermined: Cell): toBeDetermined is Fish =>
+  toBeDetermined[0] === FISH_ID;
+
+export const getNewFish = (stateVersion: boolean): Fish => [
+  FISH_ID,
+  0,
+  stateVersion,
+];
 
 export const isBreedTime = (fish: Fish, bredTime: number) =>
-  fish.age >= bredTime;
+  fish[1] >= bredTime;
 
-export const resetBreedTime = (fish: Fish) => (fish.age = 0);
+export const resetBreedTime = (fish: Fish) => {
+  fish[1] = 0;
+};
 
-export const incAge = (fish: Fish) => fish.age++;
+export const incAge = (fish: Fish) => {
+  fish[1] = fish[1] + 1;
+};

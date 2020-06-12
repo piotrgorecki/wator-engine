@@ -1,30 +1,32 @@
-export type Shark = {
-  _type: "shark";
-  energy: number;
-};
+import { Cell } from "./cell";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isShark = (toBeDetermined: any): toBeDetermined is Shark =>
-  toBeDetermined?._type === "shark";
+export type SharkId = 2;
+export const SHARK_ID: SharkId = 2;
 
-export const getNewShark = (startingEnergy: number = 60): Shark => ({
-  _type: "shark",
-  energy: startingEnergy,
-});
+// [ID, energy, state version]
+export type Shark = [SharkId, number, boolean];
+
+export const isShark = (toBeDetermined: Cell): toBeDetermined is Shark =>
+  toBeDetermined[0] === SHARK_ID;
+
+export const getNewShark = (
+  startingEnergy: number,
+  stateVersion: boolean
+): Shark => [SHARK_ID, startingEnergy, stateVersion];
 
 export const decEnergy = (shark: Shark) => {
-  shark.energy--;
+  shark[1] = shark[1] - 1;
 };
 
-export const isSharkBreedTime = (shark: Shark, energyLevel: number = 120) =>
-  shark.energy >= energyLevel;
+export const isSharkBreedTime = (shark: Shark, energyLevel: number) =>
+  shark[1] >= energyLevel;
 
-export const eatFish = (shark: Shark, energyBonus: number = 30) => {
-  shark.energy += energyBonus;
+export const eatFish = (shark: Shark, energyBonus: number) => {
+  shark[1] = shark[1] + energyBonus;
 };
 
-export const breadShark = (shark: Shark, startingEnergy: number = 60) => {
-  shark.energy = startingEnergy;
+export const breadShark = (shark: Shark, startingEnergy: number) => {
+  shark[1] = startingEnergy;
 };
 
-export const isDead = (shark: Shark) => shark.energy <= 0;
+export const isDead = (shark: Shark) => shark[1] <= 0;

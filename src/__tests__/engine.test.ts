@@ -1,11 +1,26 @@
-import { getStartingBoard, computeNextFishState } from "../engine";
+import {
+  getStartingBoard,
+  computeNextFishState,
+  EngineConfiguration,
+} from "../engine";
 import { isFish } from "../fish";
 import { isShark } from "../shark";
 import { iterateBoardCells } from "../board";
 
+const conf: EngineConfiguration = {
+  fish: {
+    breedTime: 10,
+  },
+  shark: {
+    breedEnergy: 10,
+    energyBonus: 10,
+    startingEnergy: 10,
+  },
+};
+
 describe("engine", () => {
   test("getStartingBoard", () => {
-    const startingBoard = getStartingBoard(3, 4, 4, 3);
+    const startingBoard = getStartingBoard(3, 4, 4, 3, true, conf);
 
     let fishAmount = 0;
     let sharkAmount = 0;
@@ -26,10 +41,10 @@ describe("engine", () => {
 
   describe("computeNextFishState", () => {
     test("moving", () => {
-      const startingBoard = getStartingBoard(3, 4, 1, 1);
+      const board = getStartingBoard(3, 4, 1, 1, true, conf);
       let fish, position;
 
-      iterateBoardCells(startingBoard, (cell, pos) => {
+      iterateBoardCells(board, (cell, pos) => {
         if (isFish(cell)) {
           fish = cell;
           position = pos;
@@ -45,15 +60,16 @@ describe("engine", () => {
 
       if (!fish) return;
 
-      const nextBoardState = computeNextFishState(
+      computeNextFishState(
         fish,
         position,
-        startingBoard,
-        { fish: { breedTime: 10 } }
+        board,
+        { fish: { breedTime: 10 } },
+        true
       );
 
       let nextFish, nextPosition;
-      iterateBoardCells(nextBoardState, (cell, pos) => {
+      iterateBoardCells(board, (cell, pos) => {
         if (isFish(cell)) {
           nextFish = cell;
           nextPosition = pos;
