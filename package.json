@@ -16,6 +16,7 @@
     "dev": "ts-node-dev --respawn --transpileOnly ./index.ts",
     "build": "tsc",
     "ben": "ts-node-dev --respawn --transpileOnly ./src/engine.benchmark.ts",
+    "dv": "ts-node-dev --respawn --transpileOnly ./src/dataview.ts",
     "serve": "node lib/index.js",
     "prod": "npm run build && npm run serve",
     "prepare": "npm run build",

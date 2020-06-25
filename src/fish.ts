@@ -1,27 +1,49 @@
-import { Cell } from "./cell";
+import { Board } from "./board";
+import { CellIndex } from "./types";
+import { getCellOffset, getId, setId, setStateVersion } from "./cell";
 
 export type FishId = 1;
 export const FISH_ID: FishId = 1;
 
-// [ID, age, state version]
-export type Fish = [FishId, number, boolean];
+/**
+ * Cell size is 4 bytes
+ * 0 (8)  - type (ID)
+ * 1 (16) - age
+ * 3 (8)  - state version
+ */
+export type Fish = FishId;
 
-export const isFish = (toBeDetermined: Cell): toBeDetermined is Fish =>
-  toBeDetermined[0] === FISH_ID;
-
-export const getNewFish = (stateVersion: boolean): Fish => [
-  FISH_ID,
-  0,
-  stateVersion,
-];
-
-export const isBreedTime = (fish: Fish, bredTime: number) =>
-  fish[1] >= bredTime;
-
-export const resetBreedTime = (fish: Fish) => {
-  fish[1] = 0;
+const getAge = (board: Board, cellIndex: CellIndex) =>
+  board.dataView.getUint8(getCellOffset(cellIndex) + 1);
+const setAge = (board: Board, cellIndex: CellIndex, age: number) => {
+  board.dataView.setUint8(getCellOffset(cellIndex) + 1, age);
 };
 
-export const incAge = (fish: Fish) => {
-  fish[1] = fish[1] + 1;
+export const isFish = (
+  board: Board,
+  toBeDetermined: CellIndex
+): toBeDetermined is Fish => getId(board, toBeDetermined) === FISH_ID;
+
+export const putNewFish = (
+  board: Board,
+  cellIndex: CellIndex,
+  stateVersion: number
+) => {
+  setId(board, cellIndex, FISH_ID);
+  setAge(board, cellIndex, 0);
+  setStateVersion(board, cellIndex, stateVersion);
+};
+
+export const isBreedTime = (
+  board: Board,
+  cellIndex: CellIndex,
+  bredTime: number
+) => getAge(board, cellIndex) >= bredTime;
+
+export const resetBreedTime = (board: Board, cellIndex: CellIndex) => {
+  setAge(board, cellIndex, 0);
+};
+
+export const incAge = (board: Board, cellIndex: CellIndex) => {
+  setAge(board, cellIndex, getAge(board, cellIndex) + 1);
 };

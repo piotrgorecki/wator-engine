@@ -2,34 +2,30 @@ import { getRandomInt } from "./helpers";
 import {
   getEmptyBoard,
   Board,
-  getCell,
-  setCell,
-  getBoardDimensions,
   iterateBoardCells,
-  Position,
   moveCell,
-  getNeighboringCellPosition,
+  getNeighboringCellIndex,
+  getBoardSize,
 } from "./board";
-import { isEmpty, EmptyCell } from "./empty";
+import { isEmpty, putEmptyCell } from "./empty";
 import {
-  getNewFish,
+  putNewFish,
   isFish,
-  Fish,
   isBreedTime,
   resetBreedTime,
   incAge,
 } from "./fish";
 import {
-  getNewShark,
   isShark,
-  Shark,
   eatFish,
   decEnergy,
   isSharkBreedTime,
-  breadShark,
+  resetEnergy,
   isDead,
+  putNewShark,
 } from "./shark";
-import { Cell } from "./cell";
+import { CellOffset, CellIndex } from "./types";
+import { getStateVersion } from "./cell";
 
 export type EngineConfiguration = {
   fish: {
@@ -45,7 +41,7 @@ export type EngineConfiguration = {
 export default class Engine {
   board: Board;
   conf: EngineConfiguration;
-  stateVersion: boolean;
+  stateVersion: number;
 
   constructor(
     boardSize: [number, number],
@@ -54,7 +50,7 @@ export default class Engine {
     conf: EngineConfiguration
   ) {
     this.conf = conf;
-    this.stateVersion = true;
+    this.stateVersion = 0;
     this.board = getStartingBoard(
       boardSize[0],
       boardSize[1],
@@ -66,23 +62,21 @@ export default class Engine {
   }
 
   nextState(): void {
-    this.stateVersion = !this.stateVersion;
+    this.stateVersion = this.stateVersion > 254 ? 0 : this.stateVersion + 1;
 
-    iterateBoardCells(this.board, (cell, position) => {
-      if (!isEmpty(cell) && !this.wasMoved(cell)) {
-        if (isFish(cell)) {
+    iterateBoardCells(this.board, cellIndex => {
+      if (!isEmpty(this.board, cellIndex) && !this.wasMoved(cellIndex)) {
+        if (isFish(this.board, cellIndex)) {
           computeNextFishState(
-            cell,
-            position,
             this.board,
+            cellIndex,
             this.conf,
             this.stateVersion
           );
-        } else if (isShark(cell)) {
+        } else if (isShark(this.board, cellIndex)) {
           computeNextSharkState(
-            cell,
-            position,
             this.board,
+            cellIndex,
             this.conf,
             this.stateVersion
           );
@@ -92,105 +86,90 @@ export default class Engine {
   }
 
   getBoardStats() {
-    let stats = { fish: 0, shark: 0 };
+    const stats = { fish: 0, shark: 0 };
 
-    iterateBoardCells(this.board, (cell: Cell) => {
-      if (isFish(cell)) {
-        stats = { ...stats, fish: stats.fish + 1 };
-      } else if (isShark(cell)) {
-        stats = { ...stats, shark: stats.shark + 1 };
+    iterateBoardCells(this.board, cellIndex => {
+      if (isFish(this.board, cellIndex)) {
+        stats.fish = stats.fish + 1;
+      } else if (isShark(this.board, cellIndex)) {
+        stats.shark = stats.shark + 1;
       }
     });
 
     return stats;
   }
 
-  private wasMoved(cell: Cell) {
-    return cell[2] === this.stateVersion;
+  private wasMoved(cellIndex: CellIndex) {
+    return getStateVersion(this.board, cellIndex) !== this.stateVersion;
   }
 }
 
-const isCellEmptyOrWithFish = (cell: Cell) => isEmpty(cell) || isFish(cell);
-
-export const breed = (
-  parentPosition: Position,
-  board: Board,
-  individual: Fish | Shark
-): void => {
-  const childPosition = getNeighboringCellPosition(
-    parentPosition,
-    board,
-    (cell: Cell) => isEmpty(cell)
-  );
-
-  if (!childPosition) {
-    return;
-  }
-
-  setCell(childPosition, individual, board);
-};
+const isCellEmptyOrWithFish = (board: Board, cellOffset: CellOffset) =>
+  isEmpty(board, cellOffset) || isFish(board, cellOffset);
 
 export const computeNextFishState = (
-  fish: Fish,
-  position: Position,
   board: Board,
+  index: CellIndex,
   { fish: { breedTime } }: Pick<EngineConfiguration, "fish">,
-  stateVersion: boolean
+  stateVersion: number
 ): void => {
-  const moveTo = getNeighboringCellPosition(position, board, isEmpty);
+  const moveTo = getNeighboringCellIndex(board, index, isEmpty);
 
   if (!moveTo) {
     return;
   }
 
-  moveCell(position, moveTo, board, stateVersion);
+  moveCell(board, index, moveTo, stateVersion);
+  incAge(board, moveTo);
 
-  incAge(fish);
+  if (isBreedTime(board, moveTo, breedTime)) {
+    resetBreedTime(board, moveTo);
+    const childIndex = getNeighboringCellIndex(board, index, isEmpty);
 
-  if (isBreedTime(fish, breedTime)) {
-    resetBreedTime(fish);
-    breed(moveTo, board, getNewFish(stateVersion));
+    if (!childIndex) {
+      return;
+    }
+
+    putNewFish(board, childIndex, stateVersion);
   }
 };
 
 const computeNextSharkState = (
-  shark: Shark,
-  position: Position,
   board: Board,
+  index: CellIndex,
   {
     shark: { breedEnergy, energyBonus, startingEnergy },
   }: Pick<EngineConfiguration, "shark">,
-  stateVersion: boolean
+  stateVersion: number
 ): void => {
-  const moveTo = getNeighboringCellPosition(
-    position,
-    board,
-    isCellEmptyOrWithFish
-  );
+  const moveTo = getNeighboringCellIndex(board, index, isCellEmptyOrWithFish);
 
   if (!moveTo) {
     return;
   }
 
-  const cellToMove = getCell(moveTo, board);
-
-  if (isFish(cellToMove)) {
-    eatFish(shark, energyBonus);
+  if (isFish(board, moveTo)) {
+    eatFish(board, moveTo, energyBonus);
   } else {
-    decEnergy(shark);
-    if (isDead(shark)) {
-      setCell(position, EmptyCell, board);
-      setCell(moveTo, EmptyCell, board);
+    decEnergy(board, index);
+    if (isDead(board, index)) {
+      putEmptyCell(board, index);
       return;
     }
   }
 
-  moveCell(position, moveTo, board, stateVersion);
+  moveCell(board, index, moveTo, stateVersion);
 
-  if (isSharkBreedTime(shark, breedEnergy)) {
-    breadShark(shark, startingEnergy);
-    breed(moveTo, board, getNewShark(startingEnergy, stateVersion));
-    return;
+  if (isSharkBreedTime(board, moveTo, breedEnergy)) {
+    resetEnergy(board, moveTo, startingEnergy);
+
+    const childIndex = getNeighboringCellIndex(board, index, isEmpty);
+
+    if (!childIndex) {
+      return;
+    }
+
+    putNewShark(board, childIndex, startingEnergy, stateVersion);
   }
 };
 
@@ -199,12 +178,12 @@ export const getStartingBoard = (
   cols: number,
   numberOfFish: number,
   numberOfSharks: number,
-  stateVersion: boolean,
+  stateVersion: number,
   conf: EngineConfiguration
 ): Board => {
-  const emptyBoard = getEmptyBoard(rows, cols);
-  const startingBoard: Board = populateEmptyBoard(
-    emptyBoard,
+  const startingBoard = getEmptyBoard(rows, cols);
+  populateEmptyBoard(
+    startingBoard,
     numberOfFish,
     numberOfSharks,
     stateVersion,
@@ -218,37 +197,24 @@ const populateEmptyBoard = (
   board: Board,
   numberOfFish: number,
   numberOfSharks: number,
-  stateVersion: boolean,
+  stateVersion: number,
   conf: EngineConfiguration
-): Board => {
-  let cell: Cell;
-  const [rows, cols] = getBoardDimensions(board);
-  let row, col;
-  const populatedBoard: Board = board;
+): void => {
+  let cellOffset: CellOffset;
 
   for (let i = 0; i < numberOfFish; i++) {
     do {
-      row = getRandomInt(0, rows);
-      col = getRandomInt(0, cols);
-      cell = getCell([row, col], populatedBoard);
-    } while (!isEmpty(cell));
+      cellOffset = getRandomInt(0, getBoardSize(board));
+    } while (!isEmpty(board, cellOffset));
 
-    setCell([row, col], getNewFish(stateVersion), populatedBoard);
+    putNewFish(board, cellOffset, stateVersion);
   }
 
   for (let i = 0; i < numberOfSharks; i++) {
     do {
-      row = getRandomInt(0, rows);
-      col = getRandomInt(0, cols);
-      cell = getCell([row, col], populatedBoard);
-    } while (!isEmpty(cell));
+      cellOffset = getRandomInt(0, getBoardSize(board));
+    } while (!isEmpty(board, cellOffset));
 
-    setCell(
-      [row, col],
-      getNewShark(conf.shark.startingEnergy, stateVersion),
-      populatedBoard
-    );
+    putNewShark(board, cellOffset, conf.shark.startingEnergy, stateVersion);
   }
-
-  return populatedBoard;
 };

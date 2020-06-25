@@ -20,17 +20,16 @@ const conf: EngineConfiguration = {
 
 describe("engine", () => {
   test("getStartingBoard", () => {
-    const startingBoard = getStartingBoard(3, 4, 4, 3, true, conf);
-
+    const startingBoard = getStartingBoard(3, 4, 4, 3, 0, conf);
     let fishAmount = 0;
     let sharkAmount = 0;
 
-    iterateBoardCells(startingBoard, cell => {
-      if (isFish(cell)) {
+    iterateBoardCells(startingBoard, index => {
+      if (isFish(startingBoard, index)) {
         fishAmount++;
       }
 
-      if (isShark(cell)) {
+      if (isShark(startingBoard, index)) {
         sharkAmount++;
       }
     });
@@ -41,44 +40,27 @@ describe("engine", () => {
 
   describe("computeNextFishState", () => {
     test("moving", () => {
-      const board = getStartingBoard(3, 4, 1, 1, true, conf);
-      let fish, position;
+      const board = getStartingBoard(3, 4, 1, 1, 0, conf);
+      let position = -1;
 
-      iterateBoardCells(board, (cell, pos) => {
-        if (isFish(cell)) {
-          fish = cell;
-          position = pos;
+      iterateBoardCells(board, index => {
+        if (isFish(board, index)) {
+          position = index;
         }
       });
 
-      expect(fish).not.toBeNull;
-      expect(position).not.toBeNull;
+      expect(position).toBeTruthy;
 
-      if (!position) return;
-      expect(position[0]).not.toBeNaN;
-      expect(position[1]).not.toBeNaN;
+      computeNextFishState(board, position, { fish: { breedTime: 10 } }, 1);
 
-      if (!fish) return;
-
-      computeNextFishState(
-        fish,
-        position,
-        board,
-        { fish: { breedTime: 10 } },
-        true
-      );
-
-      let nextFish, nextPosition;
-      iterateBoardCells(board, (cell, pos) => {
-        if (isFish(cell)) {
-          nextFish = cell;
-          nextPosition = pos;
+      let nextPosition = -1;
+      iterateBoardCells(board, index => {
+        if (isFish(board, index)) {
+          nextPosition = index;
         }
       });
 
-      expect(nextFish).toEqual(fish);
       expect(nextPosition).not.toBeNull;
-
       expect(nextPosition).not.toEqual(position);
     });
   });

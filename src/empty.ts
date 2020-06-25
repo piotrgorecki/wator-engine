@@ -1,12 +1,23 @@
-import { Cell } from "./cell";
+import { Board } from "./board";
+import { CellIndex } from "./types";
+import { getId, setId } from "./cell";
 
 type EmptyId = 0;
 export const EMPTY_ID: EmptyId = 0;
 
-// [ID, not used, not used]
-export type Empty = [EmptyId, 0, true];
+/**
+ * Cell size is 4 bytes
+ * 0 (8)  - type (ID)
+ * 1 (16) - not used
+ * 3 (8)  - not used
+ */
+export type Empty = EmptyId;
 
-export const EmptyCell: Empty = [EMPTY_ID, 0, true];
+export const isEmpty = (
+  board: Board,
+  toBeDetermined: CellIndex
+): toBeDetermined is Empty => getId(board, toBeDetermined) === EMPTY_ID;
 
-export const isEmpty = (toBeDetermined: Cell): toBeDetermined is Empty =>
-  toBeDetermined[0] === EMPTY_ID;
+export const putEmptyCell = (board: Board, cellIndex: CellIndex) => {
+  setId(board, cellIndex, EMPTY_ID);
+};

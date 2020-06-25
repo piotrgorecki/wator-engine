@@ -31,4 +31,5 @@ console.log(i);
  * (dev mode)
  * 12.047s / 330 - starting
  *  0.189s / 282 - mutate board + use arrays with numbers instead of objects for cells + fast random
+ *  0.026s / 256 - DataView
  */

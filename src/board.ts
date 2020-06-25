@@ -1,8 +1,9 @@
 import { getRandomListItem } from "./helpers";
-import { EmptyCell } from "./empty";
-import { Cell, changeCellStateVersion } from "./cell";
+import { putEmptyCell } from "./empty";
+import { copyCell, CellSize } from "./cell";
+import { CellOffset, CellIndex } from "./types";
 
-export type Board = Array<Array<Cell>>;
+export type Board = { rows: number; cols: number; dataView: DataView };
 export type Position = [number, number]; // row, col
 
 export const printBoard = (board: Board) => console.table(board);
@@ -12,9 +13,11 @@ export const getEmptyBoard = (rows: number, cols: number): Board => {
     throw new Error("minimal board's dimension is 3x3");
   }
 
-  const board = new Array(rows);
-  for (let r = 0; r < rows; r++) {
-    board[r] = new Array(cols).fill(EmptyCell);
+  const buffer = new ArrayBuffer(rows * cols * CellSize);
+  const board = { rows, cols, dataView: new DataView(buffer) };
+
+  for (let cellIndex = 0; cellIndex < rows * cols; cellIndex++) {
+    putEmptyCell(board, cellIndex);
   }
 
   return board;
@@ -24,50 +27,56 @@ export const getEmptyBoard = (rows: number, cols: number): Board => {
  * Return number of rows and cols
  */
 export const getBoardDimensions = (board: Board): [number, number] => [
-  board.length,
-  board[0].length,
+  board.rows,
+  board.cols,
 ];
 
 export const iterateBoardCells = (
   board: Board,
-  fn: (cell: Cell, position: Position) => void
+  fn: (cellIndex: CellIndex) => void
 ) => {
-  board.forEach((row, rowIndex) => {
-    row.forEach((cell, colIndex) => {
-      fn(cell, [rowIndex, colIndex]);
-    });
-  });
+  const length = board.rows * board.cols;
+  for (let cellIndex = 0; cellIndex < length; cellIndex++) {
+    fn(cellIndex);
+  }
 };
 
-export const getCell = ([row, col]: Position, board: Board): Cell => {
-  return board[row]?.[col];
-};
+/**
+ * Returns how many cell contains the board
+ */
+export const getBoardSize = (board: Board) =>
+  board.dataView.byteLength / CellSize;
 
-export const setCell = (
-  [row, col]: Position,
-  cell: Cell,
-  board: Board
-): void => {
-  board[row][col] = cell;
-};
+// export const getCell = ([row, col]: Position, board: Board): Cell => {
+//   return board[row]?.[col];
+// };
+
+// export const setCell = (
+//   [row, col]: Position,
+//   cell: Cell,
+//   board: Board
+// ): void => {
+//   board[row][col] = cell;
+// };
 
 export const moveCell = (
-  from: Position,
-  to: Position,
   board: Board,
-  stateVersion: boolean
+  from: CellOffset,
+  to: CellOffset,
+  stateVersion: number
 ): void => {
-  const cell = getCell(from, board);
-  changeCellStateVersion(cell, stateVersion);
-  setCell(from, EmptyCell, board);
-  setCell(to, cell, board);
+  copyCell(board, from, to, stateVersion);
+  putEmptyCell(board, from);
 };
 
 export const getNeighboringIndexes = (
-  [row, col]: Position,
+  cellOffset: CellOffset,
   rows: number,
   cols: number
-): Array<Position> => {
+): Array<CellOffset> => {
+  const row = Math.floor(cellOffset / cols);
+  const col = cellOffset - row * cols;
+
   const maxColIndex = cols - 1;
   const maxRowIndex = rows - 1;
 
@@ -76,7 +85,7 @@ export const getNeighboringIndexes = (
   const up = row >= 1 ? row - 1 : maxRowIndex;
   const down = row + 1 <= maxRowIndex ? row + 1 : 0;
 
-  const positions: Array<Position> = [
+  const positions: Array<[number, number]> = [
     [up, col],
     [down, col],
     [row, left],
@@ -87,19 +96,18 @@ export const getNeighboringIndexes = (
     [down, right],
   ];
 
-  return positions;
+  return positions.map(([row, col]) => row * cols + col);
 };
 
-export const getNeighboringCellPosition = (
-  position: Position,
+export const getNeighboringCellIndex = (
   board: Board,
-  fn: (cell: Cell) => boolean
-): null | Position => {
-  const [rows, cols] = getBoardDimensions(board);
-  const neighbors = getNeighboringIndexes(position, rows, cols);
-
-  const selectedNeighbors: Array<Position> = neighbors.filter(position =>
-    fn(getCell(position, board))
+  cellIndex: CellIndex,
+  fn: (board: Board, cellIndex: CellIndex) => boolean
+): null | CellIndex => {
+  const { rows, cols } = board;
+  const neighbors = getNeighboringIndexes(cellIndex, rows, cols);
+  const selectedNeighbors: Array<CellOffset> = neighbors.filter(cellIndex =>
+    fn(board, cellIndex)
   );
 
   if (!selectedNeighbors.length) {

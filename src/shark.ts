@@ -1,32 +1,65 @@
-import { Cell } from "./cell";
+import { Board } from "./board";
+import { CellIndex } from "./types";
+import { getCellOffset, getId, setId, setStateVersion } from "./cell";
 
 export type SharkId = 2;
 export const SHARK_ID: SharkId = 2;
 
-// [ID, energy, state version]
-export type Shark = [SharkId, number, boolean];
+/**
+ * Cell size is 4 bytes
+ * 0 (8)  - type (ID)
+ * 1 (16) - energy
+ * 3 (8)  - state version
+ */
+export type Shark = SharkId;
 
-export const isShark = (toBeDetermined: Cell): toBeDetermined is Shark =>
-  toBeDetermined[0] === SHARK_ID;
+const getEnergy = (board: Board, cellIndex: CellIndex) =>
+  board.dataView.getUint8(getCellOffset(cellIndex) + 1);
+const setEnergy = (board: Board, cellIndex: CellIndex, energy: number) => {
+  board.dataView.setUint8(getCellOffset(cellIndex) + 1, energy);
+};
 
-export const getNewShark = (
+export const isShark = (
+  board: Board,
+  toBeDetermined: CellIndex
+): toBeDetermined is Shark => getId(board, toBeDetermined) === SHARK_ID;
+
+export const putNewShark = (
+  board: Board,
+  cellIndex: CellIndex,
   startingEnergy: number,
-  stateVersion: boolean
-): Shark => [SHARK_ID, startingEnergy, stateVersion];
-
-export const decEnergy = (shark: Shark) => {
-  shark[1] = shark[1] - 1;
+  stateVersion: number
+) => {
+  setId(board, cellIndex, SHARK_ID);
+  setEnergy(board, cellIndex, startingEnergy);
+  setStateVersion(board, cellIndex, stateVersion);
 };
 
-export const isSharkBreedTime = (shark: Shark, energyLevel: number) =>
-  shark[1] >= energyLevel;
-
-export const eatFish = (shark: Shark, energyBonus: number) => {
-  shark[1] = shark[1] + energyBonus;
+export const decEnergy = (board: Board, cellIndex: CellIndex) => {
+  setEnergy(board, cellIndex, getEnergy(board, cellIndex) - 1);
 };
 
-export const breadShark = (shark: Shark, startingEnergy: number) => {
-  shark[1] = startingEnergy;
+export const isSharkBreedTime = (
+  board: Board,
+  cellIndex: CellIndex,
+  energyLevel: number
+) => getEnergy(board, cellIndex) >= energyLevel;
+
+export const eatFish = (
+  board: Board,
+  cellIndex: CellIndex,
+  energyBonus: number
+) => {
+  setEnergy(board, cellIndex, getEnergy(board, cellIndex) + energyBonus);
 };
 
-export const isDead = (shark: Shark) => shark[1] <= 0;
+export const resetEnergy = (
+  board: Board,
+  cellIndex: CellIndex,
+  startingEnergy: number
+) => {
+  setEnergy(board, cellIndex, startingEnergy);
+};
+
+export const isDead = (board: Board, cellIndex: CellIndex) =>
+  getEnergy(board, cellIndex) <= 0;
