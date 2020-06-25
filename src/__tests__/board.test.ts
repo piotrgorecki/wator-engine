@@ -7,11 +7,13 @@ import {
   getNeighboringCellIndex,
   getBoardDimensions,
   iterateBoardCells,
+  getSimpleBoard,
 } from "../board";
 
-import { putNewFish, isFish } from "../fish";
-import { isEmpty } from "../empty";
+import { putNewFish, isFish, FISH_ID } from "../fish";
+import { isEmpty, EMPTY_ID } from "../empty";
 import { CellSize } from "../cell";
+import { putNewShark, SHARK_ID } from "../shark";
 
 describe("board", () => {
   test("getEmptyBoard", () => {
@@ -146,6 +148,25 @@ describe("board", () => {
       expect(getNeighboringCellIndex(board, 6, isEmpty)).toBeNull;
       expect(getNeighboringCellIndex(board, 7, isEmpty)).toBeNull;
       expect(getNeighboringCellIndex(board, 8, isEmpty)).toBeNull;
+    });
+  });
+
+  describe("getSimpleBoard", () => {
+    test("return correct simple board", () => {
+      const board = getEmptyBoard(3, 3);
+      putNewFish(board, 0, 0);
+      putNewFish(board, 1, 0);
+      putNewShark(board, 2, 0, 1);
+      putNewFish(board, 3, 0);
+      putNewShark(board, 6, 0, 1);
+      putNewFish(board, 7, 0);
+
+      const simpleBoard = getSimpleBoard(board);
+      expect(simpleBoard).toEqual([
+        [FISH_ID, FISH_ID, SHARK_ID],
+        [FISH_ID, EMPTY_ID, EMPTY_ID],
+        [SHARK_ID, FISH_ID, EMPTY_ID],
+      ]);
     });
   });
 });

@@ -1,6 +1,6 @@
 import { getRandomListItem } from "./helpers";
 import { putEmptyCell } from "./empty";
-import { copyCell, CellSize } from "./cell";
+import { copyCell, CellSize, getId } from "./cell";
 import { CellOffset, CellIndex } from "./types";
 
 export type Board = { rows: number; cols: number; dataView: DataView };
@@ -42,22 +42,29 @@ export const iterateBoardCells = (
 };
 
 /**
+ * Returns two-dimension board of cell ids
+ */
+export const getSimpleBoard = (board: Board): Array<Array<number>> => {
+  const simpleBoard = new Array(board.rows);
+  let cellIndex = 0;
+
+  for (let i = 0; i < board.rows; i++) {
+    const cols = new Array(board.cols);
+    for (let j = 0; j < board.cols; j++) {
+      cols[j] = getId(board, cellIndex);
+      cellIndex++;
+    }
+    simpleBoard[i] = cols;
+  }
+
+  return simpleBoard;
+};
+
+/**
  * Returns how many cell contains the board
  */
 export const getBoardSize = (board: Board) =>
   board.dataView.byteLength / CellSize;
-
-// export const getCell = ([row, col]: Position, board: Board): Cell => {
-//   return board[row]?.[col];
-// };
-
-// export const setCell = (
-//   [row, col]: Position,
-//   cell: Cell,
-//   board: Board
-// ): void => {
-//   board[row][col] = cell;
-// };
 
 export const moveCell = (
   board: Board,
