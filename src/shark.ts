@@ -45,7 +45,7 @@ export const isSharkBreedTime = (
   energyLevel: number
 ) => getEnergy(board, cellIndex) >= energyLevel;
 
-export const eatFish = (
+export const incEnergy = (
   board: Board,
   cellIndex: CellIndex,
   energyBonus: number

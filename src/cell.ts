@@ -13,15 +13,18 @@ export const getCellOffset = (cellIndex: CellIndex): CellOffset =>
 
 export const copyCell = (
   board: Board,
-  from: CellOffset,
-  to: CellOffset,
+  from: CellIndex,
+  to: CellIndex,
   stateVersion: number
 ) => {
   const dataView = board.dataView;
 
-  dataView.setUint8(to, dataView.getUint8(from));
-  dataView.setUint16(to + 1, dataView.getUint16(from + 1));
-  dataView.setUint8(to + 3, stateVersion);
+  dataView.setUint8(getCellOffset(to), dataView.getUint8(getCellOffset(from)));
+  dataView.setUint16(
+    getCellOffset(to) + 1,
+    dataView.getUint16(getCellOffset(from) + 1)
+  );
+  dataView.setUint8(getCellOffset(to) + 3, stateVersion);
 };
 
 export const getId = (board: Board, cellIndex: CellIndex) =>

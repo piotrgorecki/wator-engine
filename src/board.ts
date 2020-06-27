@@ -1,7 +1,7 @@
 import { getRandomListItem } from "./helpers";
 import { putEmptyCell } from "./empty";
 import { copyCell, CellSize, getId } from "./cell";
-import { CellOffset, CellIndex } from "./types";
+import { CellIndex } from "./types";
 
 export type Board = { rows: number; cols: number; dataView: DataView };
 export type Position = [number, number]; // row, col
@@ -68,8 +68,8 @@ export const getBoardSize = (board: Board) =>
 
 export const moveCell = (
   board: Board,
-  from: CellOffset,
-  to: CellOffset,
+  from: CellIndex,
+  to: CellIndex,
   stateVersion: number
 ): void => {
   copyCell(board, from, to, stateVersion);
@@ -77,12 +77,12 @@ export const moveCell = (
 };
 
 export const getNeighboringIndexes = (
-  cellOffset: CellOffset,
+  cellIndex: CellIndex,
   rows: number,
   cols: number
-): Array<CellOffset> => {
-  const row = Math.floor(cellOffset / cols);
-  const col = cellOffset - row * cols;
+): Array<CellIndex> => {
+  const row = Math.floor(cellIndex / cols);
+  const col = cellIndex - row * cols;
 
   const maxColIndex = cols - 1;
   const maxRowIndex = rows - 1;
@@ -113,7 +113,7 @@ export const getNeighboringCellIndex = (
 ): null | CellIndex => {
   const { rows, cols } = board;
   const neighbors = getNeighboringIndexes(cellIndex, rows, cols);
-  const selectedNeighbors: Array<CellOffset> = neighbors.filter(cellIndex =>
+  const selectedNeighbors: Array<CellIndex> = neighbors.filter(cellIndex =>
     fn(board, cellIndex)
   );
 

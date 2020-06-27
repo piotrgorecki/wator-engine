@@ -5,7 +5,7 @@ useSeed();
 
 const t = +new Date();
 
-const engine = new Engine([50, 50], 60, 20, {
+const engine = new Engine([10, 10], 50, 10, {
   fish: {
     breedTime: 10,
   },
@@ -26,10 +26,3 @@ while (stats.fish !== 0 && stats.shark !== 0) {
 console.log((+new Date() - t) / 1000);
 console.log(stats);
 console.log(i);
-
-/**
- * (dev mode)
- * 12.047s / 330 - starting
- *  0.189s / 282 - mutate board + use arrays with numbers instead of objects for cells + fast random
- *  0.026s / 256 - DataView
- */

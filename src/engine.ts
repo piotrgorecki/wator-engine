@@ -17,7 +17,7 @@ import {
 } from "./fish";
 import {
   isShark,
-  eatFish,
+  incEnergy,
   decEnergy,
   isSharkBreedTime,
   resetEnergy,
@@ -100,7 +100,7 @@ export default class Engine {
   }
 
   private wasMoved(cellIndex: CellIndex) {
-    return getStateVersion(this.board, cellIndex) !== this.stateVersion;
+    return getStateVersion(this.board, cellIndex) === this.stateVersion;
   }
 }
 
@@ -120,11 +120,13 @@ export const computeNextFishState = (
   }
 
   moveCell(board, index, moveTo, stateVersion);
-  incAge(board, moveTo);
+  const newIndex = moveTo;
 
-  if (isBreedTime(board, moveTo, breedTime)) {
-    resetBreedTime(board, moveTo);
-    const childIndex = getNeighboringCellIndex(board, index, isEmpty);
+  incAge(board, newIndex);
+
+  if (isBreedTime(board, newIndex, breedTime)) {
+    resetBreedTime(board, newIndex);
+    const childIndex = getNeighboringCellIndex(board, newIndex, isEmpty);
 
     if (!childIndex) {
       return;
@@ -149,7 +151,7 @@ const computeNextSharkState = (
   }
 
   if (isFish(board, moveTo)) {
-    eatFish(board, moveTo, energyBonus);
+    incEnergy(board, index, energyBonus);
   } else {
     decEnergy(board, index);
     if (isDead(board, index)) {
@@ -159,11 +161,12 @@ const computeNextSharkState = (
   }
 
   moveCell(board, index, moveTo, stateVersion);
+  const newIndex = moveTo;
 
-  if (isSharkBreedTime(board, moveTo, breedEnergy)) {
-    resetEnergy(board, moveTo, startingEnergy);
+  if (isSharkBreedTime(board, newIndex, breedEnergy)) {
+    resetEnergy(board, newIndex, startingEnergy);
 
-    const childIndex = getNeighboringCellIndex(board, index, isEmpty);
+    const childIndex = getNeighboringCellIndex(board, newIndex, isEmpty);
 
     if (!childIndex) {
       return;
