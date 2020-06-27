@@ -1,2 +1,3 @@
-import Engine from "./engine";
-export default Engine;
+export * from "./board";
+
+export { default } from "./engine";

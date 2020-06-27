@@ -1,3 +1,3 @@
-export * as Engine from "./src";
+export * from "./src/board";
 
-// export { default } from "./src";
+export { default } from "./src";
